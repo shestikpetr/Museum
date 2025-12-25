@@ -1,0 +1,104 @@
+{% extends 'museum/base.html' %}
+
+{% block title %}Каталог экспонатов - Музейный комплекс{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="display-4">Каталог экспонатов</h1>
+            <p class="lead text-muted">
+                Всего экспонатов: {{ total_exhibits }} | На выставке: {{ on_display }}
+            </p>
+        </div>
+    </div>
+
+    {% if page_obj %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4">
+        {% for exhibit in page_obj %}
+        <div class="col">
+            <div class="card exhibit-card">
+                {% with main_photo=exhibit.photos.all|first %}
+                    {% if main_photo %}
+                        <img src="{{ main_photo.image.url }}" class="card-img-top exhibit-image" alt="{{ exhibit.name }}">
+                    {% else %}
+                        <div class="card-img-top exhibit-image bg-secondary d-flex align-items-center justify-content-center">
+                            <i class="bi bi-image text-white" style="font-size: 4rem;"></i>
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <div class="card-body">
+                    <h5 class="card-title">{{ exhibit.name }}</h5>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            <i class="bi bi-tag"></i> {{ exhibit.inventory_number }}
+                        </small>
+                    </p>
+                    {% if exhibit.author %}
+                        <p class="card-text">
+                            <small><i class="bi bi-person"></i> {{ exhibit.author }}</small>
+                        </p>
+                    {% endif %}
+                    {% if exhibit.category %}
+                        <p class="card-text">
+                            <span class="badge bg-primary">{{ exhibit.category }}</span>
+                        </p>
+                    {% endif %}
+                    <p class="card-text text-truncate" style="max-height: 3em;">
+                        {{ exhibit.description|truncatewords:15 }}
+                    </p>
+                    <a href="{% url 'museum:exhibit_detail' exhibit.pk %}" class="btn btn-outline-primary btn-sm">
+                        Подробнее <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Навигация по страницам" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">Первая</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Назад</a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Последняя</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-info text-center" role="alert">
+        <i class="bi bi-info-circle"></i>
+        В настоящее время нет экспонатов на выставке.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

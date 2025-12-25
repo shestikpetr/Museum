@@ -1,0 +1,176 @@
+{% extends 'museum/base.html' %}
+
+{% block title %}{{ exhibit.name }} - Музейный комплекс{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Навигационные крошки -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'museum:exhibit_list' %}">Каталог</a></li>
+            <li class="breadcrumb-item active">{{ exhibit.inventory_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <!-- Галерея фотографий -->
+        <div class="col-lg-6 mb-4">
+            {% if photos %}
+            <div id="exhibitCarousel" class="carousel slide" data-bs-ride="carousel">
+                <div class="carousel-inner">
+                    {% for photo in photos %}
+                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                        <img src="{{ photo.image.url }}" class="d-block w-100" alt="{{ photo.caption|default:exhibit.name }}" style="max-height: 500px; object-fit: contain; background-color: #f8f9fa;">
+                        {% if photo.caption %}
+                        <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-75 rounded">
+                            <p>{{ photo.caption }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if photos|length > 1 %}
+                <button class="carousel-control-prev" type="button" data-bs-target="#exhibitCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Предыдущий</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#exhibitCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Следующий</span>
+                </button>
+
+                <div class="carousel-indicators">
+                    {% for photo in photos %}
+                    <button type="button" data-bs-target="#exhibitCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+                            {% if forloop.first %}class="active"{% endif %} aria-label="Фото {{ forloop.counter }}"></button>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 400px;">
+                <div class="text-center">
+                    <i class="bi bi-image" style="font-size: 5rem;"></i>
+                    <p class="mt-3">Нет фотографий</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Информация об экспонате -->
+        <div class="col-lg-6">
+            <h1 class="display-5 mb-3">{{ exhibit.name }}</h1>
+
+            <div class="mb-4">
+                <span class="badge bg-{% if exhibit.status == 'ON_DISPLAY' %}success{% elif exhibit.status == 'IN_RESTORATION' %}warning{% elif exhibit.status == 'IN_STORAGE' %}secondary{% else %}info{% endif %} fs-6">
+                    {{ exhibit.get_status_display }}
+                </span>
+            </div>
+
+            <table class="table table-striped">
+                <tbody>
+                    <tr>
+                        <th style="width: 40%;">Инвентарный номер</th>
+                        <td><strong>{{ exhibit.inventory_number }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Текущее местоположение</th>
+                        <td>{{ exhibit.current_location }}</td>
+                    </tr>
+                    {% if exhibit.category %}
+                    <tr>
+                        <th>Категория</th>
+                        <td>{{ exhibit.category }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if exhibit.author %}
+                    <tr>
+                        <th>Автор/Создатель</th>
+                        <td>{{ exhibit.author }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if exhibit.creation_date %}
+                    <tr>
+                        <th>Дата создания</th>
+                        <td>{{ exhibit.creation_date }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if exhibit.material %}
+                    <tr>
+                        <th>Материал</th>
+                        <td>{{ exhibit.material }}</td>
+                    </tr>
+                    {% endif %}
+                    {% if exhibit.dimensions %}
+                    <tr>
+                        <th>Размеры</th>
+                        <td>{{ exhibit.dimensions }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <th>Дата поступления</th>
+                        <td>{{ exhibit.acquisition_date|date:"d.m.Y" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">Описание</h5>
+                    <p class="card-text">{{ exhibit.description }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- История перемещений -->
+    {% if history %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3>История перемещений</h3>
+            <div class="timeline mt-4">
+                {% for log in history %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> {{ log.timestamp|date:"d.m.Y H:i" }}
+                                </small>
+                            </div>
+                            <div class="col-md-9">
+                                <h6 class="mb-2">
+                                    <i class="bi bi-arrow-right-circle"></i>
+                                    {{ log.get_action_type_display }}
+                                </h6>
+                                <p class="mb-1">{{ log.notes }}</p>
+                                {% if log.from_location and log.to_location %}
+                                <small class="text-muted">
+                                    {{ log.from_location }} → {{ log.to_location }}
+                                </small>
+                                {% endif %}
+                                {% if log.performed_by %}
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-person"></i> {{ log.performed_by.get_full_name|default:log.performed_by.username }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <a href="{% url 'museum:exhibit_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Вернуться к каталогу
+        </a>
+    </div>
+</div>
+{% endblock %}
